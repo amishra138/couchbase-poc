@@ -24,20 +24,19 @@ namespace SampleCouchbaseAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            #region Couchbase Config
-            var cluster = new Cluster(new ClientConfiguration()
+            //couchbase 
+            ClusterHelper.Initialize(new ClientConfiguration()
             {
                 Servers = new List<Uri>()
                 {
                     new Uri("http://localhost:8091")
                 }
-            });
-            cluster.Authenticate(new PasswordAuthenticator("Administrator", "123456"));
-            services.AddTransient<ITravelBucketRepository, TravelBucketRepository>((x) =>
+            }, new PasswordAuthenticator("Administrator", "123456"));
+
+            services.AddTransient<ITravelBucketRepository, TravelBucketRepository>(x =>
             {
-                return new TravelBucketRepository(cluster);
+                return new TravelBucketRepository("travel-sample");
             });
-            #endregion
 
             //swagger
             services.AddSwaggerGen();
@@ -46,7 +45,7 @@ namespace SampleCouchbaseAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime hostApplicationLifetime)
         {
             if (env.IsDevelopment())
             {
@@ -60,6 +59,12 @@ namespace SampleCouchbaseAPI
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "CouchBase CRUD Demo API");
                 c.RoutePrefix = string.Empty;
+            });
+
+            //close couchbase cluster connection
+            hostApplicationLifetime.ApplicationStopped.Register(() =>
+            {
+                ClusterHelper.Close();
             });
 
             app.UseRouting();
