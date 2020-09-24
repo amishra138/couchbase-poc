@@ -1,4 +1,4 @@
-﻿using Couchbase.Core;
+﻿using Couchbase;
 using Couchbase.Linq;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,13 +7,11 @@ namespace CouchBaseStandardLib
 {
     public class TravelBucketRepository : ITravelBucketRepository
     {
-        private readonly ICluster _cluster;
         private readonly IBucketContext _bucketContext;
 
-        public TravelBucketRepository(ICluster cluster)
+        public TravelBucketRepository(string bucketName)
         {
-            _cluster = cluster;
-            _bucketContext = new BucketContext(_cluster.OpenBucket("travel-sample"));
+            _bucketContext = new BucketContext(ClusterHelper.GetBucket(bucketName));
         }
 
         public void Delete(string id)
@@ -69,6 +67,7 @@ namespace CouchBaseStandardLib
 
         public void Update(string id, Airline airline)
         {
+            airline.Id = id;
             _bucketContext.Save(airline);
         }
     }
